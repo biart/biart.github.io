@@ -1,0 +1,55 @@
+{# ===========================================================================
+   A single post.
+   =========================================================================== #}
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+
+{% block title %}{{ page.title }} &middot; {{ config.title }}{% endblock title %}
+
+{% block description %}
+  {{- page.description | default(value=config.description) -}}
+{% endblock description %}
+
+{% block feed %}
+  {# Point readers of a post at the feed for the section it belongs to.
+     relative_path rather than components, for the reason explained in
+     macros.html. #}
+  {% set section_dir = page.relative_path | split(pat="/") | first %}
+  {% set feed_file = config.feed_filenames | first %}
+  <link
+    rel="alternate"
+    type="application/atom+xml"
+    title="{{ config.title }} &middot; {{ trans(key='nav_' ~ section_dir, lang=lang) }}"
+    href="{{ get_url(path='@/' ~ section_dir ~ '/_index.md', lang=lang) | safe }}{{ feed_file }}"
+  />
+{% endblock feed %}
+
+{% block alternates %}
+  {{ m::alternates(translations=page.translations) }}
+{% endblock alternates %}
+
+{% block content %}
+  <article class="post">
+    <header class="post__header">
+      <h1>{{ page.title }}</h1>
+      <p class="post__meta">
+        {% if page.date %}
+          {% set date_format = trans(key="date_format", lang=lang) %}
+          {% set date_locale = trans(key="date_locale", lang=lang) %}
+          {{ trans(key="published", lang=lang) }}
+          <time datetime="{{ page.date }}">
+            {{ page.date | date(format=date_format, locale=date_locale) }}
+          </time>
+        {% endif %}
+        {% set section_dir = page.relative_path | split(pat="/") | first %}
+        <span class="post__section">
+          <a href="{{ get_url(path='@/' ~ section_dir ~ '/_index.md', lang=lang) | safe }}">
+            {{ trans(key="nav_" ~ section_dir, lang=lang) }}
+          </a>
+        </span>
+      </p>
+    </header>
+
+    {{ page.content | safe }}
+  </article>
+{% endblock content %}

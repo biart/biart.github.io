@@ -1,0 +1,63 @@
+{# ===========================================================================
+   A section landing page: /code/ and /other/.
+
+   Used for both because neither needs anything the other does not. If they
+   diverge later, set `template = "code_section.html"` in that section's front
+   matter rather than branching in here.
+
+   `transparent = true` on these sections passes their pages up to the front
+   page, but does NOT take the pages away from the section itself -- verified
+   with Zola 0.22.1: section.pages here still lists only that section's posts,
+   and the section's own feed is still generated.
+   =========================================================================== #}
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+
+{% block title %}{{ section.title }} &middot; {{ config.title }}{% endblock title %}
+
+{% block description %}
+  {{- section.description | default(value=config.description) -}}
+{% endblock description %}
+
+{% block feed %}
+  {# The section's own feed, from `generate_feeds = true` in its front matter.
+     Built from the section permalink plus the configured filename, so it
+     follows both base_url and any change to feed_filenames. #}
+  {% set feed_file = config.feed_filenames | first %}
+  <link
+    rel="alternate"
+    type="application/atom+xml"
+    title="{{ config.title }} &middot; {{ section.title }}"
+    href="{{ section.permalink | safe }}{{ feed_file }}"
+  />
+{% endblock feed %}
+
+{% block alternates %}
+  {{ m::alternates(translations=section.translations) }}
+{% endblock alternates %}
+
+{% block content %}
+  <h1>{{ section.title }}</h1>
+
+  {% if section.description %}
+    <p class="lede">{{ section.description }}</p>
+  {% endif %}
+
+  {# Prose written in the body of the section's _index.md, if any. #}
+  {{ section.content | safe }}
+
+  {% if paginator %}
+    {% set posts = paginator.pages %}
+  {% else %}
+    {% set posts = section.pages %}
+  {% endif %}
+
+  {{ m::post_list(pages=posts, show_section=false, lang=lang) }}
+
+  {% set feed_file = config.feed_filenames | first %}
+  <p class="feed-link">
+    <a href="{{ section.permalink | safe }}{{ feed_file }}">
+      {{ trans(key="feed", lang=lang) }}
+    </a>
+  </p>
+{% endblock content %}

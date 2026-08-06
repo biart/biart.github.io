@@ -1,0 +1,347 @@
+// ===========================================================================
+//  Hand-written, no framework, no theme.
+//
+//  Compiled by Zola (compile_sass = true) from sass/main.scss to
+//  public/main.css. Files named _something.scss are partials and are not
+//  compiled on their own, so split this file up with @use when it grows.
+//
+//  COLOUR STRATEGY: one set of colours declared with the CSS light-dark()
+//  function, plus `color-scheme: light dark` to tell the browser we support
+//  both. The browser resolves each value against the reader's OS preference --
+//  no media queries, no duplicated blocks, no JavaScript toggle.
+//
+//  This deliberately matches what Zola's syntax highlighter emits. Naming both
+//  light_theme and dark_theme in zola.toml makes giallo write its colours as
+//  light-dark(...) too, so prose and code blocks flip together automatically.
+// ===========================================================================
+
+:root {
+  color-scheme: light dark;
+
+  // github-light / github-dark, to sit with the code blocks.
+  --fg: light-dark(#24292e, #e1e4e8);
+  // Page background is intentionally NOT the code background: giallo sets the
+  // <pre> background inline (#ffffff / #24292e), so the page needs its own
+  // value for code blocks to read as distinct blocks.
+  --bg: light-dark(#ffffff, #1c2128);
+  --muted: light-dark(#57606a, #8b949e);
+  --accent: light-dark(#0969da, #6cb6ff);
+  --rule: light-dark(#d8dee4, #30363d);
+
+  // The prose column. Referenced by the figure shortcode's `sizes` default.
+  --measure: 42rem;
+
+  --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas,
+    monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0 auto;
+  padding: 2rem 1.25rem 4rem;
+  max-width: var(--measure);
+
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  // Stop mobile Safari inflating text in landscape.
+  text-size-adjust: 100%;
+}
+
+// --- links -----------------------------------------------------------------
+
+a {
+  color: var(--accent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.15em;
+}
+
+// Keyboard focus must stay visible.
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+// Visually hidden until focused, for keyboard users.
+.skip {
+  position: absolute;
+  left: -9999px;
+
+  &:focus {
+    position: static;
+    display: inline-block;
+    margin-bottom: 1rem;
+  }
+}
+
+// --- header / footer -------------------------------------------------------
+
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+
+  margin-bottom: 3rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rule);
+
+  nav ul {
+    display: flex;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+}
+
+.site-title {
+  font-weight: 650;
+  font-size: 1.1rem;
+  color: var(--fg);
+  text-decoration: none;
+}
+
+.site-footer {
+  margin-top: 4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+// --- headings and prose ----------------------------------------------------
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 2.5rem 0 0.75rem;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 1.9rem;
+  letter-spacing: -0.015em;
+}
+
+h2 {
+  font-size: 1.35rem;
+}
+
+h3 {
+  font-size: 1.1rem;
+}
+
+// insert_anchor_links = "heading" wraps heading text in a link; undo the
+// link styling so headings still look like headings.
+h1 a,
+h2 a,
+h3 a,
+h4 a {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-decoration-color: var(--muted);
+  }
+}
+
+p {
+  margin: 0 0 1.25rem;
+}
+
+.lede {
+  color: var(--muted);
+  font-size: 1.125rem;
+}
+
+.section-heading {
+  margin-top: 3rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--rule);
+  font-size: 0.8rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+blockquote {
+  margin: 1.5rem 0;
+  padding-left: 1rem;
+  border-left: 3px solid var(--rule);
+  color: var(--muted);
+}
+
+hr {
+  margin: 2.5rem 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
+}
+
+// --- post list -------------------------------------------------------------
+
+.post-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.post-list__item {
+  margin-bottom: 1.75rem;
+}
+
+.post-list__title {
+  margin: 0 0 0.15rem;
+  font-size: 1.1rem;
+
+  a {
+    color: var(--fg);
+    text-decoration: none;
+
+    &:hover {
+      color: var(--accent);
+      text-decoration: underline;
+    }
+  }
+}
+
+.post-list__meta,
+.post__meta {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+
+  // Separate the date from the section label without markup.
+  > * + * {
+    &::before {
+      content: "·";
+      margin: 0 0.5ch;
+    }
+  }
+}
+
+.post-list__desc {
+  margin: 0.35rem 0 0;
+  color: var(--muted);
+}
+
+.post-list__item--empty {
+  color: var(--muted);
+}
+
+.post__header {
+  margin-bottom: 2rem;
+}
+
+.pager {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-top: 2.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.feed-link {
+  margin-top: 2.5rem;
+  font-size: 0.875rem;
+}
+
+// --- code ------------------------------------------------------------------
+
+code,
+pre {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+}
+
+// Inline code (a <code> that is not inside a <pre>).
+:not(pre) > code {
+  padding: 0.15em 0.35em;
+  border-radius: 4px;
+  background: light-dark(#f2f4f6, #262c34);
+}
+
+// Highlighted blocks. giallo supplies the colours inline via light-dark();
+// everything here is layout only, so changing themes in zola.toml needs no
+// CSS change.
+pre {
+  margin: 1.5rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  // Long lines scroll inside the block rather than widening the page.
+  overflow-x: auto;
+  line-height: 1.5;
+
+  code {
+    // Let the <pre> own the padding.
+    padding: 0;
+    background: none;
+  }
+}
+
+// --- figures / media -------------------------------------------------------
+
+img,
+video {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.figure {
+  margin: 2rem 0;
+
+  img {
+    border-radius: 6px;
+  }
+
+  figcaption {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+}
+
+// --- tables ----------------------------------------------------------------
+
+table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+}
+
+th,
+td {
+  padding: 0.4rem 0.75rem;
+  border-bottom: 1px solid var(--rule);
+  text-align: left;
+}
+
+// --- footnotes -------------------------------------------------------------
+
+.footnote-definition {
+  color: var(--muted);
+  font-size: 0.875rem;
+
+  p {
+    display: inline;
+  }
+}

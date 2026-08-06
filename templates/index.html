@@ -1,0 +1,59 @@
+{# ===========================================================================
+   The front page: posts from BOTH sections, newest first.
+
+   How the combining works -- there is no manual merging here. Each section
+   sets `transparent = true` in its front matter, which hands its pages up to
+   the parent section. The root section (content/_index.md) sets
+   `sort_by = "date"`, so `section.pages` is already every post from both
+   content/code/ and content/other/ in reverse-chronological order.
+
+   This is why we did not merge two lists in the template: Tera-side merging
+   cannot be paginated, whereas the transparent-section approach can (see the
+   paginator note below).
+   =========================================================================== #}
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+
+{% block alternates %}
+  {{ m::alternates(translations=section.translations) }}
+{% endblock alternates %}
+
+{% block content %}
+  <h1>{{ config.title }}</h1>
+  {% if config.description %}
+    <p class="lede">{{ config.description }}</p>
+  {% endif %}
+
+  {{ section.content | safe }}
+
+  <h2 class="section-heading">{{ trans(key="latest", lang=lang) }}</h2>
+
+  {# Pagination is off for now (no `paginate_by` in content/_index.md), so
+     `paginator` is undefined and we fall back to the full page list.
+
+     The guard is not just defensive: when you enable a second language, Zola
+     synthesises a root section for it from scratch unless you create
+     content/_index.<lang>.md. That synthesised section has no paginate_by, so
+     `paginator` would be undefined for that language only -- a build failure
+     that shows up on the day you add French rather than today. The `if` makes
+     the template correct either way. #}
+  {% if paginator %}
+    {% set posts = paginator.pages %}
+  {% else %}
+    {% set posts = section.pages %}
+  {% endif %}
+
+  {{ m::post_list(pages=posts, show_section=true, lang=lang) }}
+
+  {% if paginator %}
+    <nav class="pager" aria-label="Pagination">
+      {% if paginator.previous %}
+        <a rel="prev" href="{{ paginator.previous | safe }}">&larr;</a>
+      {% endif %}
+      <span>{{ paginator.current_index }} / {{ paginator.number_pagers }}</span>
+      {% if paginator.next %}
+        <a rel="next" href="{{ paginator.next | safe }}">&rarr;</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% endblock content %}

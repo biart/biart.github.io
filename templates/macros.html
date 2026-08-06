@@ -1,0 +1,61 @@
+{# ===========================================================================
+   Shared rendering helpers. Imported with:
+     {% import "macros.html" as m %}
+   =========================================================================== #}
+
+{# ---------------------------------------------------------------------------
+   A list of posts.
+
+   pages        -- array of page objects
+   show_section -- true on the front page, where posts from both sections are
+                   mixed and the reader needs to know which is which
+   lang         -- current language, passed through for trans() and dates
+
+   NOTE the section label uses `page.relative_path`, not `page.components`.
+   For a translated page the URL gains a language prefix, so components for
+   content/code/post.fr.md is ["fr", "code", "post"] and taking the first
+   element would yield "fr". relative_path stays "code/post.fr.md" in every
+   language, so splitting it is the language-independent way to learn which
+   content directory a page came from.
+   --------------------------------------------------------------------------- #}
+{% macro post_list(pages, show_section, lang) %}
+{% set date_format = trans(key="date_format", lang=lang) %}
+{% set date_locale = trans(key="date_locale", lang=lang) %}
+<ul class="post-list">
+  {% for page in pages %}
+    <li class="post-list__item">
+      <h3 class="post-list__title">
+        <a href="{{ page.permalink | safe }}">{{ page.title }}</a>
+      </h3>
+      <p class="post-list__meta">
+        {% if page.date %}
+          <time datetime="{{ page.date }}">
+            {{ page.date | date(format=date_format, locale=date_locale) }}
+          </time>
+        {% endif %}
+        {% if show_section %}
+          {% set section_dir = page.relative_path | split(pat="/") | first %}
+          <span class="post-list__section">{{ trans(key="nav_" ~ section_dir, lang=lang) }}</span>
+        {% endif %}
+      </p>
+      {% if page.description %}
+        <p class="post-list__desc">{{ page.description }}</p>
+      {% endif %}
+    </li>
+  {% else %}
+    <li class="post-list__item post-list__item--empty">&mdash;</li>
+  {% endfor %}
+</ul>
+{% endmacro post_list %}
+
+
+{# ---------------------------------------------------------------------------
+   hreflang alternates. `translations` is page.translations or
+   section.translations; each entry has .lang and .permalink. The current page
+   is included in its own translations list, which is what hreflang wants.
+   --------------------------------------------------------------------------- #}
+{% macro alternates(translations) %}
+  {% for t in translations %}
+    <link rel="alternate" hreflang="{{ t.lang }}" href="{{ t.permalink | safe }}" />
+  {% endfor %}
+{% endmacro alternates %}

@@ -1,0 +1,69 @@
+{# ===========================================================================
+   Responsive image shortcode.
+
+   Usage from inside a post (note: {{ }}, not {% %}):
+
+     {{ figure(src="hero.png", alt="What the image shows") }}
+     {{ figure(src="hero.png", alt="...", caption="Optional *markdown* caption") }}
+     {{ figure(src="hero.png", alt="...", sizes="100vw") }}
+
+   `src` is a filename sitting NEXT TO the post's index.md (a "page bundle").
+   That keeps a post and its images in one directory, so moving or deleting a
+   post takes its images with it.
+
+   The workflow this implements: commit ONE already-shrunk original per image,
+   and let Zola derive the smaller variants at build time. Nothing generated is
+   committed, so the repo only ever grows by the size of the originals -- which
+   is why this needs no Git LFS. Keep originals to roughly the widest variant
+   below (1440px) unless you specifically want a bigger one available.
+   =========================================================================== #}
+
+{# Path is relative to the content directory. colocated_path is the post's own
+   directory, e.g. "code/hello-shaders/". #}
+{% set src_path = page.colocated_path ~ src %}
+
+{# Read the original's real dimensions so we never upscale: asking
+   resize_image for 1440px from a 900px original would produce a blurry,
+   larger-than-necessary file. #}
+{% set meta = get_image_metadata(path=src_path) %}
+
+{% set candidate_widths = [480, 960, 1440] %}
+{% set_global srcset_parts = [] %}
+
+{% for w in candidate_widths %}
+  {% if w < meta.width %}
+    {# op="fit_width" scales to the given width and keeps the aspect ratio.
+       format="auto" keeps the original's format (PNG stays PNG, JPEG stays
+       JPEG). Set format="webp" here if you'd rather trade compatibility for
+       smaller files. #}
+    {% set variant = resize_image(path=src_path, width=w, op="fit_width", format="auto") %}
+    {% set_global srcset_parts = srcset_parts | concat(with=variant.url ~ " " ~ variant.width ~ "w") %}
+  {% endif %}
+{% endfor %}
+
+{# The original width is always the top of the srcset, and the plain `src`
+   fallback for browsers that ignore srcset. It goes through resize_image too,
+   so every URL on the page points into the same generated-image directory. #}
+{% set full = resize_image(path=src_path, width=meta.width, op="fit_width", format="auto") %}
+{% set_global srcset_parts = srcset_parts | concat(with=full.url ~ " " ~ full.width ~ "w") %}
+
+<figure class="figure">
+  <img
+    src="{{ full.url | safe }}"
+    srcset="{{ srcset_parts | join(sep=', ') }}"
+    {# `sizes` tells the browser how wide the image will DISPLAY, so it can pick
+       a variant before CSS is applied. The default matches the prose column in
+       sass/main.scss -- keep the two in sync, or pass sizes= explicitly. #}
+    sizes="{{ sizes | default(value='(min-width: 46rem) 42rem, 100vw') }}"
+    {# Intrinsic dimensions let the browser reserve space, preventing the page
+       from jumping around as images load. #}
+    width="{{ full.width }}"
+    height="{{ full.height }}"
+    alt="{{ alt | default(value='') }}"
+    loading="lazy"
+    decoding="async"
+  />
+  {% if caption %}
+    <figcaption>{{ caption | markdown(inline=true) | safe }}</figcaption>
+  {% endif %}
+</figure>

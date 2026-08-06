@@ -1,0 +1,85 @@
+{# ===========================================================================
+   The shell every page inherits. Child templates fill in the blocks.
+
+   Everything here is language-aware: `lang` is set by Zola to the language of
+   the page being rendered, and every URL goes through get_url() or a
+   permalink, both of which are built from base_url in zola.toml.
+   =========================================================================== #}
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>{% block title %}{{ config.title }}{% endblock title %}</title>
+    <meta
+      name="description"
+      content="{% block description %}{{ config.description }}{% endblock description %}"
+    />
+
+    {# current_url is undefined on the 404 page, hence the default. #}
+    <link rel="canonical" href="{{ current_url | default(value=config.base_url) | safe }}" />
+
+    <link rel="stylesheet" href="{{ get_url(path='main.css') | safe }}" />
+
+    {# Site-wide feed. With a language enabled this resolves to /<lang>/atom.xml. #}
+    {% set feed_file = config.feed_filenames | first %}
+    <link
+      rel="alternate"
+      type="application/atom+xml"
+      title="{{ config.title }}"
+      href="{{ get_url(path=feed_file, lang=lang) | safe }}"
+    />
+
+    {# Section templates add their own narrower feed here. #}
+    {% block feed %}{% endblock feed %}
+
+    {# hreflang links for translated pages. Emits nothing while only English
+       is enabled; starts working the moment you add a .fr.md/.ru.md file. #}
+    {% block alternates %}{% endblock alternates %}
+  </head>
+
+  <body>
+    <a class="skip" href="#content">{{ trans(key="skip_to_content", lang=lang) }}</a>
+
+    <header class="site-header">
+      <a class="site-title" href="{{ get_url(path='@/_index.md', lang=lang) | safe }}">
+        {{ config.title }}
+      </a>
+      <nav aria-label="Sections">
+        <ul>
+          <li>
+            <a href="{{ get_url(path='@/code/_index.md', lang=lang) | safe }}">
+              {{ trans(key="nav_code", lang=lang) }}
+            </a>
+          </li>
+          <li>
+            <a href="{{ get_url(path='@/other/_index.md', lang=lang) | safe }}">
+              {{ trans(key="nav_other", lang=lang) }}
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </header>
+
+    <main id="content">
+      {% block content %}{% endblock content %}
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        <a href="{{ get_url(path=feed_file, lang=lang) | safe }}">
+          {{ trans(key="feed", lang=lang) }}
+        </a>
+        &middot;
+        <a href="{{ get_url(path='@/code/_index.md', lang=lang) | safe }}{{ feed_file }}">
+          {{ trans(key="nav_code", lang=lang) }} {{ trans(key="feed", lang=lang) | lower }}
+        </a>
+        &middot;
+        <a href="{{ get_url(path='@/other/_index.md', lang=lang) | safe }}{{ feed_file }}">
+          {{ trans(key="nav_other", lang=lang) }} {{ trans(key="feed", lang=lang) | lower }}
+        </a>
+      </p>
+    </footer>
+  </body>
+</html>

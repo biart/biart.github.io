@@ -1,0 +1,154 @@
+# ============================================================================
+#  Zola configuration.
+# ============================================================================
+base_url = "https://biart.github.io"
+
+title = "biart"
+description = "Notes on code, and on everything else. All opinions are my own."
+author = "biart"
+
+# Compile sass/*.scss -> public/*.css. Files named _*.scss are treated as
+# partials and are not compiled on their own.
+compile_sass = true
+
+# Strips whitespace/comments from the generated HTML. It is <pre>-aware, so
+# code blocks keep their formatting. Set to false if you ever want to read the
+# generated HTML in public/ directly.
+minify_html = true
+
+# Colocated originals are NOT copied into the output: every URL the figure
+# shortcode emits points at a generated variant in /processed_images/, so
+# publishing the untouched original would be dead weight. Ignoring them here
+# also sidesteps a Windows file-locking conflict where Zola copying an image
+# races with resize_image reading it (error 32, "used by another process").
+ignored_content = ["*.png", "*.jpg", "*.jpeg", "*.webp", "*.avif", "*.gif"]
+
+build_search_index = false
+generate_sitemap = true
+generate_robots_txt = true
+
+# ---------------------------------------------------------------------------
+#  Feeds
+# ---------------------------------------------------------------------------
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+
+# ---------------------------------------------------------------------------
+#  Languages
+# ---------------------------------------------------------------------------
+default_language = "en"
+
+# [languages.fr]
+# title = "biart"
+# description = "Notes sur le code, et sur tout le reste."
+# generate_feeds = true
+
+# [languages.ru]
+# title = "biart"
+# description = "Заметки о коде и обо всём остальном."
+# generate_feeds = true
+
+# ---------------------------------------------------------------------------
+#  UI strings
+#
+#  Every piece of text the templates emit themselves goes here, fetched with
+#  trans(key="...", lang=lang). This is the part that would have been a painful
+#  migration if we had hard-coded English into the templates instead.
+#
+#  The default language's strings live in a bare [translations] table; other
+#  languages use [languages.<code>.translations]. Keys must exist in EVERY
+#  enabled language or the build fails with
+#  "Translation key '<key>' for language '<lang>' is missing" -- which is a
+#  feature: you cannot ship a half-translated site by accident.
+#
+#  `nav_code` / `nav_other` are looked up dynamically as "nav_" ~ <section dir>,
+#  so a key named nav_<dirname> is required for each content section.
+# ---------------------------------------------------------------------------
+[translations]
+nav_home = "Home"
+nav_code = "Code"
+nav_other = "Other"
+latest = "Latest"
+feed = "Feed"
+feed_all = "All posts"
+published = "Published"
+not_found_title = "Page not found"
+not_found_body = "There is nothing at this address. It may have moved, or never existed."
+back_home = "Back to the front page"
+skip_to_content = "Skip to content"
+# Passed to the `date` filter. %-d is "day without leading zero".
+date_format = "%B %-d, %Y"
+# Locale for month names in the format above.
+date_locale = "en_US"
+
+# [languages.fr.translations]
+# nav_home = "Accueil"
+# nav_code = "Code"
+# nav_other = "Autre"
+# latest = "Derniers billets"
+# feed = "Flux"
+# feed_all = "Tous les billets"
+# published = "Publié le"
+# not_found_title = "Page introuvable"
+# not_found_body = "Il n'y a rien à cette adresse. Elle a peut-être changé, ou n'a jamais existé."
+# back_home = "Retour à la page d'accueil"
+# skip_to_content = "Aller au contenu"
+# date_format = "%-d %B %Y"
+# date_locale = "fr_FR"
+
+# [languages.ru.translations]
+# nav_home = "Главная"
+# nav_code = "Код"
+# nav_other = "Разное"
+# latest = "Последние записи"
+# feed = "Лента"
+# feed_all = "Все записи"
+# published = "Опубликовано"
+# not_found_title = "Страница не найдена"
+# not_found_body = "По этому адресу ничего нет. Возможно, страница переехала или никогда не существовала."
+# back_home = "На главную"
+# skip_to_content = "Перейти к содержанию"
+# date_format = "%-d %B %Y"
+# date_locale = "ru_RU"
+
+# ---------------------------------------------------------------------------
+#  Taxonomies (tags/categories) -- not enabled
+#
+#  taxonomies = [{ name = "tags", feed = true, paginate_by = 20 }]
+# ---------------------------------------------------------------------------
+
+[markdown]
+# Curly quotes, em dashes, ellipses.
+smart_punctuation = true
+# Wraps each heading in an anchor link so headings are linkable. Values:
+# "none" | "left" | "right" | "heading".
+insert_anchor_links = "heading"
+# Footnotes at the bottom of the page rather than inline where defined.
+bottom_footnotes = true
+# Open outbound links in a new tab without leaking the referrer.
+external_links_target_blank = true
+external_links_no_referrer = true
+
+# ---------------------------------------------------------------------------
+#  Syntax highlighting
+#
+#  If you ever DO need a grammar giallo lacks, drop a JSON grammar in the repo
+#  and point at it (paths resolve from this file's directory):
+#    extra_grammars = ["syntaxes/my_lang.json"]
+#    extra_themes   = ["syntaxes/my_theme.json"]
+# ---------------------------------------------------------------------------
+[markdown.highlighting]
+# Fail the build on an unknown language in a code fence, instead of silently
+# rendering it as plain text.
+error_on_missing_language = true
+
+# Naming a light AND a dark theme makes giallo emit CSS light-dark() values
+# plus `color-scheme: light dark`, so code blocks follow the reader's OS theme
+# with no JavaScript and no duplicate markup. sass/main.scss uses the same
+# light-dark() mechanism so the page and the code blocks flip together.
+# Swap in any of giallo's ~60 built-in themes; a wrong name fails the build.
+light_theme = "github-light"
+dark_theme = "github-dark"
+
+[extra]
+# Your own variables, reachable as config.extra.<name> in templates.

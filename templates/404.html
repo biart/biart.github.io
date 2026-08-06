@@ -1,0 +1,20 @@
+{# ===========================================================================
+   Served by GitHub Pages for unknown paths.
+
+   It can be served from ANY path, so every URL on it must be absolute.
+   get_url() returns absolute URLs built from base_url, so inheriting the
+   normal shell is safe here -- relative paths would break.
+   =========================================================================== #}
+{% extends "base.html" %}
+
+{% block title %}{{ trans(key="not_found_title", lang=lang) }} &middot; {{ config.title }}{% endblock title %}
+
+{% block content %}
+  <h1>{{ trans(key="not_found_title", lang=lang) }}</h1>
+  <p class="lede">{{ trans(key="not_found_body", lang=lang) }}</p>
+  <p>
+    <a href="{{ get_url(path='@/_index.md', lang=lang) | safe }}">
+      {{ trans(key="back_home", lang=lang) }}
+    </a>
+  </p>
+{% endblock content %}

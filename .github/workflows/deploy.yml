@@ -1,0 +1,115 @@
+# ============================================================================
+#  Build the site and publish it to GitHub Pages.
+#
+#  ONE-TIME SETUP: repo Settings -> Pages -> "Build and deployment" -> Source:
+#  "GitHub Actions". Without that, this workflow runs but the deploy step fails.
+#
+#  This is hand-written rather than using getzola/github-pages. That action
+#  exists and would shorten this file, but as of early 2026 it is a single
+#  commit old, and it would not leave us anywhere to generate the CNAME. The
+#  three actions/* used below are GitHub's own and are what their static-site
+#  starter workflows use.
+# ============================================================================
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Lets you re-deploy from the Actions tab without pushing a commit, which is
+  # what you want after changing a repo setting or a DNS record.
+  workflow_dispatch:
+
+# Least privilege. `pages` + `id-token` are what deploy-pages needs to mint its
+# deployment token; nothing here needs write access to the repository.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race. cancel-in-progress is false so an in-flight
+# deploy finishes rather than leaving Pages half-updated.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  # Pinned deliberately: an unpinned Zola would let a future release change
+  # your output without a commit from you. Bump this on purpose, and keep it in
+  # step with the version you run locally (`zola --version`).
+  ZOLA_VERSION: 0.22.1
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Zola
+        run: |
+          curl --fail --location --silent --show-error \
+            "https://github.com/getzola/zola/releases/download/v${ZOLA_VERSION}/zola-v${ZOLA_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+            --output zola.tar.gz
+          tar -xzf zola.tar.gz
+          sudo install -m 755 zola /usr/local/bin/zola
+          zola --version
+
+      - name: Derive CNAME from base_url
+        # Keeps the domain in exactly one place. Rather than committing
+        # static/CNAME (which would mean the domain is written twice, and the
+        # two could drift), we read the host back out of base_url and write the
+        # file at build time. static/ is copied verbatim into the output, so
+        # this lands at the root of the site as GitHub Pages requires.
+        #
+        # A *.github.io base_url means no custom domain yet, so no CNAME: a
+        # stale CNAME file is worse than none, since Pages would keep trying to
+        # serve a domain you no longer point at it.
+        run: |
+          base_url="$(sed -n 's/^[[:space:]]*base_url[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' zola.toml | head -n 1)"
+          if [ -z "$base_url" ]; then
+            echo "::error::Could not parse base_url out of zola.toml"
+            exit 1
+          fi
+          # Strip the scheme, then anything from the first slash onwards.
+          host="${base_url#*://}"
+          host="${host%%/*}"
+          echo "base_url=$base_url -> host=$host"
+
+          case "$host" in
+            *.github.io)
+              echo "Default github.io host; not writing a CNAME."
+              ;;
+            "")
+              echo "::error::base_url has no host component"
+              exit 1
+              ;;
+            *)
+              mkdir -p static
+              printf '%s\n' "$host" > static/CNAME
+              echo "Wrote static/CNAME: $host"
+              ;;
+          esac
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Build
+        # base_url comes from zola.toml; nothing is overridden here on purpose,
+        # so what CI publishes is what you get locally with `zola build`.
+        run: zola build
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
