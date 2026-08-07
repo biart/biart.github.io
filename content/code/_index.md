@@ -1,6 +1,6 @@
 +++
 title = "Code"
-description = "Graphics, C++, and things that compile."
+description = "Random thoughts on programming, geometry and graphics."
 
 # Newest first, same as the front page.
 sort_by = "date"
