@@ -510,7 +510,7 @@ Ranges add new possibilities that simply have not existed before. However, they 
 There are more performance stories in ranges that have nothing to do with any of the above. For instance:
 
  - A `views::transform` piped into a `views::filter` will evaluate the transform twice for every element that survives.
- - A `views::join` is always slightly more expensive than nested loops, since it needs to check for a sentinel at every step.
+ - A `views::concat` is always slightly more expensive than nested loops, since it needs to dispatch for the type of the container at each operation.
 
 These two are not library oversights -- they fall out of the external iteration model itself. C++26 adds `views::cache_latest` specifically to work around the first point, and the second one needs more elaborate solutions. That deserves its own post, and it will get one. Note that these are not important if you are choosing between the STL without ranges and the STL with ranges: the latter only adds possibilities on top of the former.
 
