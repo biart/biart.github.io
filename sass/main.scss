@@ -29,7 +29,10 @@
   --rule: light-dark(#d8dee4, #30363d);
 
   // The prose column. Referenced by the figure shortcode's `sizes` default.
-  --measure: 42rem;
+  --measure: 46rem;
+
+  // The outer bound. Tables and code blocks are allowed to spread this far.
+  --measure-wide: 52rem;
 
   --font-body: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial,
     sans-serif;
@@ -44,7 +47,9 @@
 body {
   margin: 0 auto;
   padding: 2rem 1.25rem 4rem;
-  max-width: var(--measure);
+  // The page may be as wide as --measure-wide; the rules below pull prose back
+  // to --measure and centre it, so only tables and code use the extra room.
+  max-width: var(--measure-wide);
 
   background: var(--bg);
   color: var(--fg);
@@ -53,6 +58,33 @@ body {
   line-height: 1.65;
   // Stop mobile Safari inflating text in landscape.
   text-size-adjust: 100%;
+}
+
+// --- measure ---------------------------------------------------------------
+//
+// Everything is centred at the reading measure by default. Wide blocks opt out
+// below. No media queries needed: max-width plus auto margins already collapse
+// to the viewport on a narrow screen.
+
+.site-header,
+.site-footer,
+main > :not(.post) {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+// Post content is emitted as direct children of <article class="post">, so
+// these selectors reach every paragraph, heading, list and blockquote.
+.post > * {
+  max-width: var(--measure);
+  margin-inline: auto;
+}
+
+// ...except the two things that are scanned rather than read. 100% here means
+// the full --measure-wide body, not the narrower prose column.
+.post > pre,
+.post > table {
+  max-width: 100%;
 }
 
 // --- links -----------------------------------------------------------------
@@ -321,9 +353,17 @@ video {
 // --- tables ----------------------------------------------------------------
 
 table {
+  // Same rhythm as pre and blockquote. Without this the table sits flush
+  // against the next paragraph, because p only carries a bottom margin.
+  margin: 1.5rem auto;
+  // display:block is what makes a wide table scroll inside itself instead of
+  // widening the page -- but it also means the rows form an anonymous table box
+  // that shrink-wraps. So size the block to its content and let the auto
+  // margins centre it, rather than stretching it to 100% and leaving a short
+  // table stranded at the far left.
   display: block;
+  width: fit-content;
   overflow-x: auto;
-  width: 100%;
   border-collapse: collapse;
   font-size: 0.9375rem;
 }

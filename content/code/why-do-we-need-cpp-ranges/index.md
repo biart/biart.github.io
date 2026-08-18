@@ -267,7 +267,7 @@ Before measuring what this abstraction costs, let me show a couple of C++20 bonu
 
 ### Bonus one: `std::invoke` as the default way to call things
 
-This one is my own little discovery -- I have not seen it advertised much, so I am delighted to share it, even if the impact is mostly cosmetic. You have probably never cared much about `std::invoke`, and neither have I. However, C++20 adopts this function as *the* primary way to call things passed to the standard library, which has a pleasant implication: `std::invoke` was designed to "work out of the box" with anything callable, pointers to members included. For instance, look how this simplifies the min example and solves problem C entirely:
+This one is my own little discovery -- I have not seen it advertised much, so I am delighted to share it, even if the impact is mostly cosmetic. You have probably never cared much about `std::invoke`, and neither have I. However, C++20 adopts this function as *the* primary way to call things passed to the standard library, which has a pleasant implication: `std::invoke` was designed to "work out of the box" with anything callable, pointers to members included. For instance, look how this simplifies the min example and solves problem **C** entirely:
 
 ```cpp
 using std::views::transform;
@@ -287,7 +287,9 @@ const Entry result = std::ranges::min(
     &Entry::real);  // <== the new "projection": applied to each element before comparing
 ```
 
-One difference from the previous version is that it returns the entry itself, not its `real()` -- so we have to call `real()` once more to get the number we were after. Note also the return type: `std::ranges::min` hands back a `range_value_t`, a *value*, so the whole `Entry` is copied out. For a fat struct that is a real cost, and one more reason `min_element` still exists.
+One difference from the previous version is that it returns the entry itself, not its `real()` -- so we have to call `real()` once more to get the number we were after. Note also the return type: `std::ranges::min` hands back a `range_value_t`, a *value*, so the whole `Entry` is copied out[^mincopy]. For a fat struct that is a real cost, and one more reason `min_element` still exists.
+
+[^mincopy]: `std::ranges::min` returning `range_value_t` is another small disappointment: I am not sure why the standard committee declined the idea of returning a range reference (that can be a prvalue conditionally).
 
 It is nice syntactic sugar that gives us yet another way to find a minimum. But you need to be careful with it. After benching this version, I discovered one curious [requirement](https://timsong-cpp.github.io/cppwp/n4868/alg.min.max) of the projection-based interface, in [alg.min.max]/7:
 
