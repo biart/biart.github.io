@@ -9,11 +9,11 @@ date = 2026-08-12
 
 After a couple of conversations with colleagues, I realised I had become something of an [`std::ranges`](https://cppreference.com/cpp/ranges) apologist. This post started as an attempt to put those thoughts on paper and make the case to C++ coders who never got around to trying `std::ranges`.
 
-It is 2026 -- six years since C++20, a standard revolutionary enough that the word needs no defending. Yet some of my fellow C++ programmers still aren't closely familiar with everything it brings. Concepts are universally welcomed; `std::ranges` is where opinions split, and scepticism sometimes wins. The [VFX Reference Platform](https://vfxplatform.com/#reference-platform) only scheduled its C++20 transition for this year, so while this post is a little dated, it appears just in time to echo some older videos from C++ conferences and revisit some of their goodies, as more people are about to meet these features for the first time.
+It is 2026 -- six years since C++20, a standard revolutionary enough that the word needs no defending. Yet some of my fellow C++ programmers still aren't closely familiar with everything it brings. Concepts are universally welcomed; `std::ranges` is where opinions split, and scepticism sometimes wins. The [VFX Reference Platform](https://vfxplatform.com/#reference-platform) only scheduled its C++20 transition for this year, so maybe it is not too late for another opinion.
 
 I planned something short at first: take a task that is one line in Python, show why every C++17 spelling of it comes out bulky, and show how `ranges` fix it. But then I benchmarked it, and... fell down a rabbit hole. The obvious ranges spelling turns out to cost twice what it should on two of the three major standard libraries.
 
-So this is still a case for `std::ranges` — I use them, I recommend them, and I show that we can easily come up with a one-liner that is exactly as fast as the hand-written loop. But it is also a map of where the abstraction leaks today, which spelling to reach for, and which one to quietly avoid. (And I promise a small C++20 bonus you might not have heard of)
+So this is still a case for `std::ranges` — I use them, I recommend them, and I will show a one-liner exactly as fast as the hand-written loop. But it is also a map of where the abstraction leaks, which spelling to reach for, and which one to quietly avoid.
 
 
 ## Finding minimum with a twist
@@ -77,11 +77,11 @@ Just in case, I tried both variants in the benchmark below. But as they perform 
 
 ## What's wrong with boomer loops: opinions
 
-What is wrong with the above code? Nothing serious, as in "I would approve this PR for our codebase". However, some questions remain. We reimplemented the logic of the *minimal element* function, and that violates the so-called DRY principle[^dry]... No, three lines of code are not much logic, but maybe the real problem is that this loop, despite its charming simplicity, diverges from the natural language too much? Writing out a loop every time we want a simple action, as if we were solving a little programming exercise along the way, is more ceremony than the task deserves. It is as if, every time we wanted a cup of tea, we asked: "could you pour some tap water into a kettle and switch it on, please?" -- and let's hope the waiter doesn't take it literally when the kettle is already full.
+What is wrong with this code? Nothing serious, as in "I would approve this PR for our codebase". And yet: we have just reimplemented finding a minimum, a problem solved decades ago, by hand[^dry]... No, three lines is not much logic, but the loop, despite its charming simplicity, diverges from how we think. Writing out a loop every time we want a simple action, as if we were solving a little programming exercise along the way, is more ceremony than the task deserves. It is as if, every time we wanted a cup of tea, we asked: "could you pour some tap water into a kettle and switch it on, please?" -- and hoped the waiter doesn't take it literally when the kettle is already full.
 
 [^dry]: [Don't repeat yourself](https://en.wikipedia.org/wiki/Don%27t_repeat_yourself) — "every piece of knowledge must have a single, unambiguous, authoritative representation within a system". Coined by Andy Hunt and Dave Thomas in *The Pragmatic Programmer* (1999).
 
-Another nitpick is the infinity trick. It is fine for double, but it buys us one pointless comparison on the first iteration. Initialising `result` with `entries[0]` is cleaner, but it needs more boilerplate, we lose the range-for loop, and it is undefined behaviour on an empty container. To back up these observations, let's appeal to authority:
+Another nitpick is the infinity trick. It is fine for double, but it costs us one pointless comparison on the first iteration. Initialising `result` with `entries[0]` is cleaner, but it needs more boilerplate, we lose the range-for loop, and it is undefined behaviour on an empty container. To back up these observations, let's appeal to authority:
 
  - [Scott Meyers, "STL Algorithms vs. Hand-Written Loops"](https://jacobfilipp.com/DrDobbs/articles/CUJ/2001/0110/smeyers/smeyers.htm) (*C/C++ Users Journal*, October 2001) -- a lightly edited reprint of Item 43 of *Effective STL*[^meyers]. The C++ guru suggests that STL algorithms are often better implemented than what an average programmer writes ad hoc: they handle corner cases, and they may be faster.
  - [Sandor Dargo, "Loops vs algorithms"](https://www.sandordargo.com/blog/2020/05/13/loops-vs-algorithms) -- a balanced take that still leans towards the STL where possible, "unless squeezing the last bits of perf".
@@ -89,9 +89,7 @@ Another nitpick is the infinity trick. It is fine for double, but it buys us one
 
 [^meyers]: Scott Meyers, *Effective STL: 50 Specific Ways to Improve Your Use of the Standard Template Library*, Addison-Wesley, 2001, Item 43: "Prefer Algorithm Calls to Hand-Written Loops" (ISBN 978-0-201-74962-5). Meyers lists the article on his [publications page](https://www.aristeia.com/publications.html) and notes on his [blog](https://scottmeyers.blogspot.com/2001/09/updated-errata-lists-article-in-cuj.html) that the October CUJ carried "a slightly-modified version of *Effective STL*'s Item 43".
 
-I think it would be fair if I say that there is an opposite opinion: there is a long tradition in graphics and games of writing C with a restricted subset of C++ and no STL at all. It is not ignorance -- it comes from compile times, debug-build performance, and wanting to see the cost of every line at the call site. There are famous people whom I admire, like Jonathan Blow, who was so frustrated with C++ that he wrote his own language [Jai](https://en.wikipedia.org/wiki/Jonathan_Blow#2017%E2%80%93present:_Jai_programming_language,_Order_of_the_Sinking_Star,_and_Braid,_Anniversary_Edition), and Casey Muratori with his [spicy takes about C++](https://cmuratori.spicytakes.org/post/2014-07-23-blog_0023#quote-0). The no STL sentiment and some criticism of the abstractions that can be confusing for both the programmer and the CPU even appear at CppCon itself as a part of Mike Acton's talk, which came out of real problems in game production:
-
-- [Mike's talk: CppCon 2014 Data-Oriented Design and C++](https://isocpp.org/blog/2015/01/cppcon-2014-data-oriented-design-and-c-mike-acton)
+To be fair, the opposite camp exists and has real arguments. Graphics and games have a long tradition of writing C with a restricted subset of C++ and no STL at all -- not out of ignorance, but out of compile times, debug-build performance, and wanting to see the cost of every line at the call site. Jonathan Blow, got frustrated with C++ enough to write his own language, [Jai](https://en.wikipedia.org/wiki/Jonathan_Blow#2017%E2%80%93present:_Jai_programming_language,_Order_of_the_Sinking_Star,_and_Braid,_Anniversary_Edition); Casey Muratori has his [spicy takes](https://cmuratori.spicytakes.org/post/2014-07-23-blog_0023#quote-0); and the no-STL sentiment reached the CppCon stage itself with Mike Acton's talk [Data-Oriented Design talk](https://isocpp.org/blog/2015/01/cppcon-2014-data-oriented-design-and-c-mike-acton), born of real problems in game production.
 
 Personally, I share some of their misgivings about object-oriented design. But I do rely on the STL, and well-designed abstractions are often a lifesaver for me. That may be because my field is not games or rendering, with their frame budgets and GPU interop, but computational geometry -- where a working day looks more like "run Dijkstra over ten different views of a graph". Or... maybe I just love abstractions.
 
@@ -129,7 +127,7 @@ You have probably noticed that I made the variable names long, and that is on pu
 Finally, just to be honest, there *is* a way to use the STL sensibly here without either overcomputing `real` or allocating memory. As we are cool coders, possibly with some college degrees, we know that `min(a, b)` is a bit like `a + b` in the sense that it can be "folded" in any order to get the desired minimum, just like `+` can be folded to get the total sum. The problem we are solving is actually a classic map-reduce. So we can use [`std::accumulate`](https://cppreference.com/cpp/algorithm/accumulate) for the reduction:
 
 ```cpp
-const double value = std::accumulate(
+const double result = std::accumulate(
     object_with_entries.entries.cbegin(), object_with_entries.entries.cend(),
     std::numeric_limits<double>::infinity(),
     [](const double acc, const auto& e) { return std::min(acc, e.real()); });
@@ -138,7 +136,7 @@ const double value = std::accumulate(
 Now tell me, have you ever heard of [`std::transform_reduce`](https://cppreference.com/cpp/algorithm/transform_reduce)? Me, personally... well, I learned of it today, while writing this post! So here is the last C++17 solution, one you might never have come up with:
 
 ```cpp
-const double value = std::transform_reduce(
+const double result = std::transform_reduce(
     object_with_entries.entries.cbegin(), object_with_entries.entries.cend(),
     std::numeric_limits<double>::infinity(),
     [](const double a, const double b) { return std::min(a, b); },  // reduce
@@ -152,7 +150,7 @@ It looks like the STL is surprisingly helpless -- or, more precisely, awkward --
 
 ## A summary of STL problems
 
-Let's sum up the pre-C++20 problems we encountered. I could distinguish three main problems, in decreasing order of importance:
+I distinguished three problems, in decreasing order of importance:
 
 ### A. No appropriate STL algorithm to cover compound tasks
 
@@ -171,20 +169,20 @@ I asked Claude if there was some STL algorithm I had missed that could crack the
 
 ### B. Iterator interfaces of the STL are unnecessarily verbose
 
-We need to write `<expression>` twice for `<expression>.begin()` and `<expression>.end()`, and this is a duplication that would be nice to avoid. But why does it exist in the first place? Well, because an iterator is historically an abstraction over a pointer, and a pointer carries no information about where to stop, so you need two of them to express something that in natural language is a single entity. As a side effect, the two-iterator form is also somewhat generic: it lets us pass a slice to algorithms. We can argue that this genericity is only partial, as we cannot pass strided data, for instance. But I would say the real problem is that this abstraction is stuck midway: it adds unnecessary duplication for the vast majority of use cases, is not generic enough to solve all of them, and for some reason covers a "slicing" case that is not that frequent in reality. To illustrate this, I made a small experiment: I took the C++17 project from my work and counted all the places where we pass an entire range to an STL function versus where we pass a slice like `f(std::next(a.begin()), a.end())` or `const auto iter = std::find(...); f(iter, a.end())`. Here are the results:
+We need to write `<expression>` twice for `<expression>.begin()` and `<expression>.end()`, and this is a duplication that would be nice to avoid. But why does it exist in the first place? Well, because an iterator is historically an abstraction over a pointer, and a pointer carries no information about where to stop, so you need two of them to express something that in natural language is a single entity. As a side effect, the two-iterator form also lets us pass a slice to algorithms. We can argue that this genericity is only partial, as we cannot pass strided data, for instance. But I would say the real problem is that this abstraction is stuck midway: it adds unnecessary duplication for the vast majority of use cases, is not generic enough to solve all of them, and for some reason covers a "slicing" case that is not that frequent in reality. To illustrate this, I made a small experiment: I took the C++17 project from my work and counted all the places where we pass an entire range to an STL function versus where we pass a slice like `f(std::next(a.begin()), a.end())` or `const auto iter = std::find(...); f(iter, a.end())`. Here are the results:
 
 | Call shape | Count |
 |---|---|
 | Full-range iterator pairs | ~700 |
 | Slices | ~50 |
 
-It appeared surprisingly difficult to gather these stats. In a codebase that has a lot of templated functions that accept containers, with no standard template argument name reserved for this, and where third-party span is already used (albeit sparsely), tracking each input to every function is tedious. So I limited myself to a script that only inspects STL call sites, and we can extrapolate it to the rest of the use cases. I had to remove false positives like the remove/erase idiom or [`std::distance`](https://en.cppreference.com/cpp/iterator/distance), so this remains a fair estimate. There is also some survivorship bias: in C++17 the code calls the STL only when it is possible, and for loops are still popular alongside STL calls. Yet this does not seem to shift this statistic in any particular direction, but only highlights problem **A** we have discussed.
+Gathering these stats was surprisingly hard. In a codebase that has a lot of templated functions that accept containers, with no standard template argument name reserved for this, and where third-party span is already used (albeit sparsely), tracking each input to every function is tedious. So I limited myself to a script that only inspects STL call sites, and we can extrapolate it to the rest of the use cases. I had to remove false positives like the remove/erase idiom or [`std::distance`](https://en.cppreference.com/cpp/iterator/distance), so this remains a fair estimate. There is also some survivorship bias: in C++17 the code calls the STL only when it is possible, and for loops are still popular alongside STL calls. Yet this does not seem to shift this statistic in any particular direction, but only highlights problem **A** we have discussed.
 
 What do the statistics say? More than 90% of the time we need to pass an entire range to an algorithm, so the API should *not* treat slices as the first-class case. Rather, it would be more appropriate to add slicing as a second overload, especially since we humans usually don't think in terms of iterators, but in terms of whole entities or sets. Returning to our tea example: it is, again, too verbose to think of filling a kettle "from bottom to top". One may start thinking whether this detail is even important, and whether we could theoretically pour water "from the bottom of this kettle to the top of that mug". Yeah -- water spilled all over your API is a design issue.
 
 ### C. We need to write lambdas even if we already have the function
 
-This is really just another side of problem **A**: in C++17, even when we can use some STL function, in order to conform to its API we have to write throwaway lambdas that wrap the function we already have. It is less of an issue, but I list it separately so I can share some good news later: C++20 has some nice improvements on top of ranges that further streamline using the standard library and overcome this last caveat.
+In C++17, even when the right algorithm exists, its API refuses the function we already have and demands a throwaway lambda wrapped around it. It is less of an issue, but I list it separately so I can share some good news later: C++20 has some improvements on top of ranges that further streamline using the standard library and overcome this last caveat.
 
 
 ## Solving min problem with C++20 and ranges
@@ -263,7 +261,7 @@ It is impressively close to how we stated the task in English, and -- once we ge
 
 There are also no intermediate copies, because `reals_view` is never materialised: it is a lazy view over the entries, and `real` is called only on demand, when the view's iterator is dereferenced. A pragmatic C++20 mindset, I believe, lies in separating a view's *definition* from its *materialisation*: we first assemble an expression by nesting views, then evaluate it exactly where we need it, with the STL algorithms "compiling" the whole thing into something that looks very much like a for loop. That gives us full control over API design and over where the computation actually happens.
 
-Before measuring what this abstraction costs, let me show a couple of C++20 bonuses I advertised in the introduction.
+Before measuring what this abstraction costs, let me show a couple of C++20 bonuses.
 
 ### Bonus one: `std::invoke` as the default way to call things
 
@@ -303,7 +301,7 @@ But let's actually bench it!
 
 ## Performance
 
-Now it is the right moment to figure out if ranges are able to compete with "boomer loops" and the C++17 STL in terms of performance. "Zero-cost abstraction" became some sort of sarcastic joke online, so I am going to find out how much the abstraction really costs. We are going to measure two things: the number of `real` invocations, and the actual runtime under different optimisations. Here are the twelve variants:
+ Time to find out whether ranges can compete with boomer loops and the C++17 STL. "Zero-cost abstraction" became some sort of sarcastic joke online, so I am going to find out what the abstraction really costs. We are going to measure the number of `real()` invocations, and wall-clock time under different optimisation settings. Twelve variants:
 
 | # | Standard | Variant |
 |---|---|---|
@@ -327,7 +325,7 @@ Variants 10 to 12 are not really separate approaches -- each isolates a single q
 C++23 is even newer, and I include variant 9 not to show off but because [`ranges::fold_*`](https://en.cppreference.com/cpp/algorithm/ranges/fold_left) is, to some extent, a range-based analogue of `transform_reduce`:
 
 ```cpp
-return std::ranges::fold_left(
+const double result = std::ranges::fold_left(
     object_with_entries.entries | std::views::transform(&Entry::real),
     std::numeric_limits<double>::infinity(),
     [](const double a, const double b) { return std::min(a, b); });
@@ -471,7 +469,7 @@ This post is finally coming to its end; it is time to summarise what we have fou
 
 ### Design
 
-Firstly, I hope that the benefits of C++20 ranges for the design were convincing. The STL before ranges posed too many obstacles that force us to resort to custom loops more often than in other languages. Writing clean interfaces like returning a view over a container was also impossible without inventing a wheel -- there were simply no tools for this in the library. C++20 turns things around, making the language more complete than ever before. For our study case -- all three complaints from the summary section are answered:
+First, the design -- here I hope the case made itself. The pre-ranges STL puts up so many obstacles that we retreat to custom loops more often than users of any comparable language. C++20 turns that around. All three complaints from the summary are answered:
 
  - One argument for one range, instead of an expression repeated twice with `.cbegin()` and `.cend()` glued on.
  - The function we already had, used directly, instead of smuggled into a comparator that pretends to be about ordering.
@@ -489,9 +487,12 @@ reads almost exactly like the Python line we started with, which was the whole p
 
 The performance case is messier than I wanted it to be. The idiomatic spelling costs about twice the hand-written loop on Microsoft's STL, and something between 1.0 and 4.4 times on GCC and Clang depending on the spelling, the flags, and whether your projection happens to inline. I cannot write it off with "zero-cost abstraction" and move on.
 
-The choice of minimal element for my study was not deliberate, and I am glad that I have been lucky enough to discover that in the current state of things: **no library implementation is able to provide a foolproof experience when working with transforming views**. Moreover, **the standard itself seems unable to fully handle the undoubtedly complex problem of incorporating modern concepts into an extensive language and its legacy**.
+I did not pick minimum-finding to make anyone look bad -- I picked it because it was the simplest task I could imagine. It turned out to be a lucky pick, and we discovered that in the current state of things:
 
-Then fun stuff happens, an unexpected part of the study. When the standard, whether by accident or not, opens the door for library implementers to further optimise the C++20 experience, they start disagreeing: libstdc++ evaluates once per element; Microsoft's evaluates twice; libc++ lands somewhere in between depending on your data.
+ - no library implementation offers a foolproof experience with transforming views,
+ - and the standard's own complexity wording sometimes forbids the fix outright.
+
+And then the genuinely fun part, the one I never planned: where the standard leaves the door open, the three implementations walk through it in three different directions — libstdc++ evaluates once per element, Microsoft's twice, libc++ somewhere in between depending on your data.
 
 This study also yields some precise advice for writing performant code that involves ranges. Here they are:
 
@@ -518,7 +519,7 @@ These two are not library oversights -- they fall out of the external iteration 
 
 I wish new `std::min_element` and all the other modern C++20 algorithms were smarter about transforming views, but I admit that it is not a realistic desire: the standard already made a huge leap with C++20 and it cannot easily please everyone without breaking something else. So what I would like to see change now is small and specific. `ranges::min` and friends could evaluate each element once -- libstdc++ already proves it is possible, conforming, and free. I have filed [microsoft/STL#6404](https://github.com/microsoft/STL/issues/6404) asking for exactly that, and offered to write the patch. And I would gently suggest that "Exactly N-1 comparisons and twice as many projections" is a strange thing to promise: an upper bound would let implementations be clever, whereas an equality obliges them to be wasteful in the one case where waste is most expensive.
 
-Finally, there is a second half to this story, and it belongs to the compiler rather than the library. The loop `min_element` is forced to write -- carry an iterator, recompute its key on every comparison -- is one MSVC does not optimise, and it turns out you do not need ranges, or even the standard library, to show it. Give a three-line loop a key as cheap as a single multiply, and the incumbent's key is still reloaded and recomputed on every iteration, although nothing in the loop could possibly have changed it. Put `cos` back in and that is the whole 2.09x from the tables. GCC performs the transformation at `-O3`, which is exactly why its rows go flat. I have filed [that one too](https://developercommunity.visualstudio.com/t/MSVC-Optimizer-does-not-keep-a-loop-carr/11139307).
+Finally, I believe that repeating transforms are going to be an increasing challenge to optimising compilers with C++20 and above. The loop `min_element` is forced to write -- carry an iterator, recompute its key on every comparison -- is one MSVC does not optimise. So I have filed [that one too](https://developercommunity.visualstudio.com/t/MSVC-Optimizer-does-not-keep-a-loop-carr/11139307).
 
 
 ## Appendix: the remaining benchmarks
